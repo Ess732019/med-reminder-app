@@ -1,0 +1,15 @@
+{
+  "name": "رفيقي - تذكير الأدوية",
+  "short_name": "رفيقي",
+  "description": "تطبيق تذكير المواعيد الدوائية بالصوت، بخصوصية كاملة وبدون سيرفر",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F6F2E9",
+  "theme_color": "#1F5E52",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
