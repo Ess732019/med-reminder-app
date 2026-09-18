@@ -1,0 +1,11 @@
+{
+  "name": "med-reminder-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Checks Firestore for due medication reminders and sends encrypted Web Push notifications",
+  "main": "check-reminders.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "web-push": "^3.6.7"
+  }
+}
