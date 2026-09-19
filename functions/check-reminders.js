@@ -50,10 +50,14 @@ async function run() {
     const user = userDoc.data();
     const timeZone = user.timeZone || 'Africa/Cairo';
     const subscription = user.pushSubscription;
-    if (!subscription) continue;
-
     const nowHHMM = currentTimeInZone(timeZone);
     const reminders = user.reminders || [];
+    console.log(`  User ${userDoc.id}: timeZone=${timeZone}, localNow=${nowHHMM}, hasSubscription=${!!subscription}, reminders=${reminders.length}`);
+    reminders.forEach(r=>{
+      const timesStr = (r.times||[]).map(t=> `${t.type}:${t.value}`).join(', ');
+      console.log(`    reminder ${r.id}: [${timesStr}]`);
+    });
+    if (!subscription) continue;
 
     for (const reminder of reminders) {
       const times = reminder.times || [];
@@ -61,6 +65,7 @@ async function run() {
         let targetTime = null;
         if (t.type === 'fixed') targetTime = t.value;
         else if (t.type === 'meal') targetTime = (user.meals || {})[t.value];
+        console.log(`      checking time ${t.type}:${t.value} -> target=${targetTime} vs now=${nowHHMM}`);
         if (!targetTime || targetTime !== nowHHMM) continue;
 
         // منع تكرار نفس التذكير أكتر من مرة في نفس الدقيقة لو الفحص اتكرر بسرعة
