@@ -193,7 +193,7 @@
   <section class="screen" id="screen-add-med">
     <div class="topbar">
       <button class="icon-btn" onclick="go('screen-home')">→</button>
-      <h2 data-i18n="add_med_title">دواء جديد</h2>
+      <h2 data-i18n="add_med_title" id="add-med-title">دواء جديد</h2>
       <span style="width:22px;"></span>
     </div>
     <div class="stack">
@@ -564,7 +564,7 @@ const STRINGS = {
        name_ph:'مثلاً: محمد', male:'راجل', female:'ست', tone_q:'حابب أكلمك إزاي؟', tone_playful:'بروح مرحة', tone_serious:'بشكل جدي وهادي',
        start:'يلا نبدأ', nav_home:'الرئيسية', nav_tests:'تحاليل', nav_reports:'تقارير', nav_settings:'إعدادات',
        empty_title:'لسه مفيش أدوية مضافة', empty_sub:'دوس على زرار + عشان تضيف أول دواء',
-       add_med_title:'دواء جديد', med_name_label:'اسم الدواء', med_name_ph:'مثلاً: كونكور، أوجمنتين...',
+       add_med_title:'دواء جديد', edit_med_title:'تعديل الدواء', med_name_label:'اسم الدواء', med_name_ph:'مثلاً: كونكور، أوجمنتين...',
        form_label:'نوع الدواء', form_pill:'أقراص', form_syrup:'شراب', form_injection:'حقن',
        dose_label:'الجرعة', doctor_label:'طبيب واصف الدواء (اختياري)', doctor_ph:'اسم الدكتور',
        specialty_label:'التخصص (اختياري)', specialty_ph:'مثلاً: قلب، مخ وأعصاب',
@@ -592,7 +592,7 @@ const STRINGS = {
        name_ph:'e.g. Mohamed', male:'Male', female:'Female', tone_q:'How should we talk to you?', tone_playful:'Playful and warm', tone_serious:'Calm and formal',
        start:"Let's start", nav_home:'Home', nav_tests:'Tests', nav_reports:'Reports', nav_settings:'Settings',
        empty_title:'No medications added yet', empty_sub:'Tap + to add your first medication',
-       add_med_title:'New medication', med_name_label:'Medication name', med_name_ph:'e.g. Concor, Augmentin...',
+       add_med_title:'New medication', edit_med_title:'Edit medication', med_name_label:'Medication name', med_name_ph:'e.g. Concor, Augmentin...',
        form_label:'Medication type', form_pill:'Tablets', form_syrup:'Syrup', form_injection:'Injection',
        dose_label:'Dose', doctor_label:'Prescribing doctor (optional)', doctor_ph:"Doctor's name",
        specialty_label:'Specialty (optional)', specialty_ph:'e.g. Cardiology, Neurology',
@@ -620,7 +620,7 @@ const STRINGS = {
        name_ph:'ex : Mohamed', male:'Homme', female:'Femme', tone_q:'Comment voulez-vous qu’on vous parle ?', tone_playful:'De façon joyeuse', tone_serious:'De façon calme et formelle',
        start:'Commencer', nav_home:'Accueil', nav_tests:'Analyses', nav_reports:'Rapports', nav_settings:'Réglages',
        empty_title:'Aucun médicament ajouté', empty_sub:'Appuyez sur + pour ajouter un médicament',
-       add_med_title:'Nouveau médicament', med_name_label:'Nom du médicament', med_name_ph:'ex : Concor, Augmentin...',
+       add_med_title:'Nouveau médicament', edit_med_title:'Modifier le médicament', med_name_label:'Nom du médicament', med_name_ph:'ex : Concor, Augmentin...',
        form_label:'Type de médicament', form_pill:'Comprimés', form_syrup:'Sirop', form_injection:'Injection',
        dose_label:'Dose', doctor_label:'Médecin prescripteur (optionnel)', doctor_ph:'Nom du médecin',
        specialty_label:'Spécialité (optionnel)', specialty_ph:'ex : Cardiologie, Neurologie',
@@ -951,19 +951,31 @@ function clearRecording(){
 
 /* ============ إضافة دواء ============ */
 let newMed = null;
-function openAddMed(){
-  newMed = { id: 't'+Date.now(), name:'', form:'pill', dose:'', doctor:'', specialty:'',
-             frequency:'once', times:[],
-             duration:{ type:'chronic' }, quantity:null, audioClip:null };
-  document.getElementById('med-name').value='';
-  document.getElementById('med-doctor').value='';
-  document.getElementById('med-specialty').value='';
-  document.getElementById('med-quantity').value='';
+function openAddMed(medId){
+  const existing = medId ? state.medications.find(m=>m.id===medId) : null;
+  if(existing){
+    newMed = JSON.parse(JSON.stringify(existing)); // نسخة كاملة عشان التعديل ميأثرش على الأصل غير بعد الحفظ
+  } else {
+    newMed = { id: 't'+Date.now(), name:'', form:'pill', dose:'', doctor:'', specialty:'',
+               frequency:'once', times:[],
+               duration:{ type:'chronic' }, quantity:null, audioClip:null };
+  }
+  document.getElementById('med-name').value = newMed.name || '';
+  document.getElementById('med-doctor').value = newMed.doctor || '';
+  document.getElementById('med-specialty').value = newMed.specialty || '';
+  document.getElementById('med-quantity').value = newMed.quantity!=null ? newMed.quantity : '';
   document.getElementById('med-name-suggestion').textContent='';
+  const titleEl = document.getElementById('add-med-title');
+  if(titleEl) titleEl.textContent = existing ? t('edit_med_title') : t('add_med_title');
   resetRecordingUI();
-  selectMedForm('pill', document.querySelector('.med-form-btn[data-form="pill"]'));
+  if(existing && existing.audioClip){
+    document.getElementById('play-record-btn').style.display='inline-flex';
+    document.getElementById('clear-record-btn').style.display='inline-flex';
+  }
+  selectMedForm(newMed.form, document.querySelector('.med-form-btn[data-form="'+newMed.form+'"]'));
   go('screen-add-med');
 }
+function editMedication(id){ openAddMed(id); }
 document.getElementById('med-name').addEventListener('input', e=>{
   const sugg = fuzzyMatch(e.target.value);
   document.getElementById('med-name-suggestion').textContent = sugg.length? didYouMeanLabel()+sugg.join(' / ') : '';
@@ -1026,6 +1038,7 @@ function selectMedForm(form, btn){
   DOSE_OPTIONS[form].forEach(d=>{
     const chip = document.createElement('button');
     chip.className='chip'; chip.textContent=optLabel(d);
+    if(newMed.doseId===d.id) chip.classList.add('selected');
     chip.onclick=()=>{ newMed.dose=optLabel(d); newMed.doseId=d.id; doseWrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected')); chip.classList.add('selected'); };
     doseWrap.appendChild(chip);
   });
@@ -1054,6 +1067,7 @@ function renderFrequencyOptions(){
   opts.forEach(o=>{
     const chip=document.createElement('button');
     chip.className='chip'; chip.textContent=optLabel(o);
+    if(newMed.frequency===o.id) chip.classList.add('selected');
     chip.onclick=()=>{
       newMed.frequency=o.id;
       wrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
@@ -1179,6 +1193,7 @@ function renderDurationTypeOptions(){
   DURATION_TYPE_OPTIONS.forEach(o=>{
     const chip=document.createElement('button');
     chip.className='chip'; chip.textContent=optLabel(o);
+    if(newMed && newMed.duration && newMed.duration.type===o.id) chip.classList.add('selected');
     chip.onclick=()=>{
       newMed.duration = { type: o.id };
       wrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
@@ -1187,6 +1202,7 @@ function renderDurationTypeOptions(){
     };
     wrap.appendChild(chip);
   });
+  if(newMed && newMed.duration && newMed.duration.type){ renderDurationDetail(newMed.duration.type); }
 }
 
 const GAP_OPTIONS = [
@@ -1211,22 +1227,23 @@ function renderDurationDetail(type){
   box.innerHTML='';
   if(type==='course'){
     box.innerHTML = `<label class="field-label" style="margin-top:0;">${gl('days_label')}</label>
-      <input type="number" id="dur-course-days" placeholder="${gl('days_ph')}">`;
+      <input type="number" id="dur-course-days" placeholder="${gl('days_ph')}" value="${newMed.duration.days!=null?newMed.duration.days:''}">`;
   } else if(type==='repeat-gap'){
     box.innerHTML = `<label class="field-label" style="margin-top:0;">${gl('days_label')}</label>
-      <input type="number" id="dur-course-days" placeholder="${gl('days_ph')}" style="margin-bottom:10px;">
+      <input type="number" id="dur-course-days" placeholder="${gl('days_ph')}" style="margin-bottom:10px;" value="${newMed.duration.days!=null?newMed.duration.days:''}">
       <label class="field-label">${gl('gap_q')}</label>
       <div class="chip-row" id="dur-gap-options"></div>`;
     const gapWrap = box.querySelector('#dur-gap-options');
     GAP_OPTIONS.forEach(g=>{
       const chip=document.createElement('button');
       chip.className='chip'; chip.textContent=optLabel(g);
+      if(newMed.duration.gap===g.ar) chip.classList.add('selected');
       chip.onclick=()=>{ newMed.duration.gap=g.ar; gapWrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected')); chip.classList.add('selected'); };
       gapWrap.appendChild(chip);
     });
   } else if(type==='cycle'){
     box.innerHTML = `<label class="field-label" style="margin-top:0;">${gl('cycle_on_label')}</label>
-      <input type="number" id="dur-cycle-on" placeholder="${gl('cycle_on_ph')}" style="margin-bottom:10px;">
+      <input type="number" id="dur-cycle-on" placeholder="${gl('cycle_on_ph')}" style="margin-bottom:10px;" value="${newMed.duration.on!=null?newMed.duration.on:''}">
       <label class="field-label">${gl('cycle_off_label')}</label>
       <div class="chip-row" id="dur-cycle-off"></div>
       <label class="field-label">${gl('cycle_total_label')}</label>
@@ -1235,6 +1252,7 @@ function renderDurationDetail(type){
     GAP_OPTIONS.forEach(g=>{
       const chip=document.createElement('button');
       chip.className='chip'; chip.textContent=optLabel(g);
+      if(newMed.duration.off===g.ar) chip.classList.add('selected');
       chip.onclick=()=>{ newMed.duration.off=g.ar; offWrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected')); chip.classList.add('selected'); };
       offWrap.appendChild(chip);
     });
@@ -1242,6 +1260,7 @@ function renderDurationDetail(type){
     GAP_OPTIONS.forEach(g=>{
       const chip=document.createElement('button');
       chip.className='chip'; chip.textContent=optLabel(g);
+      if(newMed.duration.total===g.ar) chip.classList.add('selected');
       chip.onclick=()=>{ newMed.duration.total=g.ar; totalWrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected')); chip.classList.add('selected'); };
       totalWrap.appendChild(chip);
     });
@@ -1267,9 +1286,17 @@ function saveMedication(){
   newMed.specialty = document.getElementById('med-specialty').value.trim();
   const qty = document.getElementById('med-quantity').value;
   newMed.quantity = qty ? parseInt(qty) : null;
-  newMed.startedAt = new Date().toISOString();
-  newMed.log = [];
-  state.medications.push(newMed);
+  const existingIdx = state.medications.findIndex(m=>m.id===newMed.id);
+  if(existingIdx>=0){
+    // تعديل دواء موجود: نحافظ على تاريخه وسجل الالتزام بتاعه زي ما هو
+    newMed.startedAt = state.medications[existingIdx].startedAt;
+    newMed.log = state.medications[existingIdx].log || [];
+    state.medications[existingIdx] = newMed;
+  } else {
+    newMed.startedAt = new Date().toISOString();
+    newMed.log = [];
+    state.medications.push(newMed);
+  }
   saveState();
   syncRemindersToServer();
   go('screen-home');
@@ -1297,6 +1324,7 @@ function openDetail(id){
       ${med.quantity!=null?`<div class="row space-between"><span class="muted">${t('detail_remaining')}</span><span>${med.quantity}</span></div>`:''}
     </div>
     <button class="btn btn-primary" onclick="simulateReminder('${med.id}')">${t('try_reminder')}</button>
+    <button class="btn" onclick="editMedication('${med.id}')" style="margin-top:8px;">${{ar:'✏️ تعديل الدواء',en:'✏️ Edit medication',fr:'✏️ Modifier'}[state.lang] || '✏️ تعديل الدواء'}</button>
   `;
   go('screen-med-detail');
 }
