@@ -149,7 +149,33 @@
 <div id="app">
 
   <!-- ======= شاشة 1: الترحيب ======= -->
-  <section class="screen active" id="screen-onboarding">
+  <!-- ======= شاشة 0: إخلاء المسؤولية وإعداد البطارية ======= -->
+  <section class="screen active" id="screen-disclaimer">
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:18px; padding-top:20px;">
+      <div style="text-align:center; font-size:36px;">ℹ️</div>
+      <h1 data-i18n="disclaimer_title" style="text-align:center;">قبل ما نبدأ</h1>
+
+      <div class="card">
+        <h3 data-i18n="battery_title" style="margin-bottom:8px;">مهم لضمان وصول التنبيهات</h3>
+        <p class="muted" data-i18n="battery_intro" style="margin-bottom:8px;"></p>
+        <p class="tiny" data-i18n="battery_brands"></p>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="disclaimer_med_title" style="margin-bottom:8px;"></h3>
+        <p class="muted" data-i18n="disclaimer_med_text"></p>
+      </div>
+
+      <label class="row" style="gap:10px; align-items:flex-start; cursor:pointer;">
+        <input type="checkbox" id="disclaimer-check" style="margin-top:3px; width:18px; height:18px;">
+        <span class="tiny" data-i18n="disclaimer_checkbox"></span>
+      </label>
+
+      <button class="btn btn-primary" id="disclaimer-continue-btn" onclick="acceptDisclaimer()" data-i18n="continue_btn" disabled></button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-onboarding">
     <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:18px; text-align:center;">
       <div style="font-size:44px;">🤍</div>
       <div>
@@ -397,6 +423,8 @@
         <button class="btn btn-small" style="margin-top:10px;" onclick="deactivateDevice()" data-i18n="deactivate">إلغاء تفعيل هذا الجهاز</button>
       </div>
       <hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">
+      <button class="btn btn-small" onclick="viewDisclaimer()" style="margin-top:4px;" data-i18n="settings_disclaimer_link">إخلاء المسؤولية ونصائح البطارية</button>
+      <hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">
       <button class="btn btn-ghost" style="color:var(--coral);" onclick="resetAllData()" data-i18n="delete_all">حذف كل البيانات من هذا الجهاز</button>
     </div>
   </section>
@@ -549,6 +577,7 @@ function loadState(){
   if(raw){ try { return JSON.parse(raw); } catch(e){} }
   return {
     onboarded:false,
+    disclaimerAccepted:false,
     lang:'ar',
     patient:{ name:'', gender:'male', tone:'playful', meals:{breakfast:'08:00', lunch:'14:00', dinner:'21:00'} },
     medications:[],
@@ -587,6 +616,13 @@ const STRINGS = {
        snooze:'أجّل 10 دقايق', confirm_default:'بالشفاء', ok:'تمام', lang_label:'اللغة',
        notif_label:'الإشعارات', notif_enable:'فعّل إشعارات النظام', notif_note:'عشان يوصلك التذكير حتى لو التطبيق مش فاتح قدامك',
        notif_hint:'ملاحظة: التذكير بيشتغل طول ما المتصفح/التطبيق شغال في الخلفية على الجهاز - مش مضمون 100% لو قفلت التطبيق تمامًا لفترة طويلة.',
+       disclaimer_title:'قبل ما نبدأ', battery_title:'مهم لضمان وصول التنبيهات',
+       battery_intro:'بعض أجهزة الأندرويد (خصوصًا شاومي، أوبو، فيفو، وهواوي) بتوقف إشعارات التطبيقات تلقائيًا لتوفير البطارية.',
+       battery_brands:'الحل: روح لإعدادات الموبايل → البطارية → استثنِ هذا التطبيق من توفير الطاقة، عشان التذكير يوصلك في ميعاده دايمًا.',
+       disclaimer_med_title:'إخلاء المسؤولية',
+       disclaimer_med_text:'هذا التطبيق أداة تذكير بمواعيد الأدوية والتحاليل والأشعة فقط، ولا يقدم أي استشارة أو نصيحة طبية من أي نوع. البيانات المدخلة (اسم الدواء، الجرعة، المواعيد) بمعرفة المستخدم بالكامل وتحت مسؤوليته، ويجب دائمًا الرجوع للطبيب أو الصيدلي فيما يخص العلاج نفسه.',
+       disclaimer_checkbox:'قرأت وفهمت النقط دي وموافق عليها',
+       continue_btn:'متابعة', settings_disclaimer_link:'إخلاء المسؤولية ونصائح البطارية',
        record_label:'سجّل تذكير هذا الدواء بصوتك (اختياري - أفضل حل للهجة المصرية)', record_start:'🎙️ ابدأ التسجيل', record_stop:'⏹️ إيقاف التسجيل', record_play:'▶️ تشغيل', record_hint:'لو سجّلت صوتك، هيتشغل بدل الصوت الآلي وقت التذكير. لو مسجلتش، هيستخدم الصوت الافتراضي.' },
   en:{ welcome_title:'Welcome', welcome_sub:"We'll walk with you step by step through your medication schedule. What's your first name?",
        name_ph:'e.g. Mohamed', male:'Male', female:'Female', tone_q:'How should we talk to you?', tone_playful:'Playful and warm', tone_serious:'Calm and formal',
@@ -615,6 +651,13 @@ const STRINGS = {
        snooze:'Snooze 10 min', confirm_default:'Get well soon', ok:'OK', lang_label:'Language',
        notif_label:'Notifications', notif_enable:'Enable system notifications', notif_note:"So reminders reach you even when the app isn't open in front of you",
        notif_hint:"Note: reminders work as long as the browser/app is running in the background on the device — not 100% guaranteed if it's fully closed for a long time.",
+       disclaimer_title:'Before we start', battery_title:'Important for reminders to arrive',
+       battery_intro:'Some Android phones (especially Xiaomi, Oppo, Vivo, and Huawei) automatically stop app notifications to save battery.',
+       battery_brands:'Fix: go to Phone Settings → Battery → exclude this app from battery optimization, so reminders always reach you on time.',
+       disclaimer_med_title:'Disclaimer',
+       disclaimer_med_text:'This app is only a reminder tool for medication, lab test, and scan schedules — it does not provide any medical advice or consultation. All entered data (medication name, dose, timing) is entered and used at the sole responsibility of the user; always consult your doctor or pharmacist about the treatment itself.',
+       disclaimer_checkbox:'I have read and understood the above, and I agree',
+       continue_btn:'Continue', settings_disclaimer_link:'Disclaimer & battery tips',
        record_label:"Record this medication's reminder in your own voice (optional - best fix for local accent)", record_start:'🎙️ Start recording', record_stop:'⏹️ Stop recording', record_play:'▶️ Play', record_hint:"If you record your voice, it plays instead of the robotic voice at reminder time. If not, the default voice is used." },
   fr:{ welcome_title:'Bienvenue', welcome_sub:'On va vous accompagner pas à pas pour vos horaires de médicaments. Quel est votre prénom ?',
        name_ph:'ex : Mohamed', male:'Homme', female:'Femme', tone_q:'Comment voulez-vous qu’on vous parle ?', tone_playful:'De façon joyeuse', tone_serious:'De façon calme et formelle',
@@ -643,6 +686,13 @@ const STRINGS = {
        snooze:'Reporter 10 min', confirm_default:'Bon rétablissement', ok:'OK', lang_label:'Langue',
        notif_label:'Notifications', notif_enable:'Activer les notifications système', notif_note:"Pour que les rappels vous parviennent même si l'application n'est pas ouverte",
        notif_hint:"Remarque : les rappels fonctionnent tant que le navigateur/l'application tourne en arrière-plan sur l'appareil — non garanti à 100% en cas de fermeture prolongée.",
+       disclaimer_title:'Avant de commencer', battery_title:'Important pour recevoir les rappels',
+       battery_intro:"Certains téléphones Android (notamment Xiaomi, Oppo, Vivo et Huawei) arrêtent automatiquement les notifications des applications pour économiser la batterie.",
+       battery_brands:"Solution : allez dans Paramètres → Batterie → excluez cette application de l'optimisation de la batterie, pour que les rappels vous parviennent toujours à l'heure.",
+       disclaimer_med_title:'Avertissement',
+       disclaimer_med_text:"Cette application est uniquement un outil de rappel pour les médicaments, analyses et examens — elle ne fournit aucun avis ni conseil médical. Toutes les données saisies (nom du médicament, dose, horaires) le sont sous l'entière responsabilité de l'utilisateur ; consultez toujours votre médecin ou pharmacien concernant le traitement lui-même.",
+       disclaimer_checkbox:"J'ai lu et compris ce qui précède, et j'accepte",
+       continue_btn:'Continuer', settings_disclaimer_link:'Avertissement et conseils batterie',
        record_label:'Enregistrez le rappel de ce médicament avec votre voix (optionnel - la meilleure solution pour un accent local)', record_start:'🎙️ Démarrer', record_stop:'⏹️ Arrêter', record_play:'▶️ Écouter', record_hint:"Si vous enregistrez votre voix, elle sera utilisée à la place de la voix robotique. Sinon, la voix par défaut sera utilisée." }
 };
 function t(key){ return (STRINGS[state.lang] && STRINGS[state.lang][key]) || STRINGS.ar[key] || key; }
@@ -841,6 +891,18 @@ function selectTone(t, btn){
   obTone=t;
   btn.parentElement.querySelectorAll('.btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
+}
+function acceptDisclaimer(){
+  state.disclaimerAccepted = true;
+  saveState();
+  go(disclaimerReturnScreen);
+}
+let disclaimerReturnScreen = 'screen-onboarding';
+function viewDisclaimer(){
+  disclaimerReturnScreen = 'screen-settings';
+  document.getElementById('disclaimer-check').checked = true;
+  document.getElementById('disclaimer-continue-btn').disabled = false;
+  go('screen-disclaimer');
 }
 function finishOnboarding(){
   const name = document.getElementById('ob-name').value.trim();
@@ -1713,10 +1775,17 @@ function buildLangChips(containerId, onPick){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});
   }
-  if(state.onboarded){
-    document.getElementById('bottom-nav').style.display='flex';
-    go('screen-home');
-    if('Notification' in window && Notification.permission==='granted'){ syncRemindersToServer(); }
+  const disclaimerCheck = document.getElementById('disclaimer-check');
+  const disclaimerBtn = document.getElementById('disclaimer-continue-btn');
+  if(disclaimerCheck) disclaimerCheck.addEventListener('change', ()=>{ disclaimerBtn.disabled = !disclaimerCheck.checked; });
+  if(state.disclaimerAccepted){
+    if(state.onboarded){
+      document.getElementById('bottom-nav').style.display='flex';
+      go('screen-home');
+      if('Notification' in window && Notification.permission==='granted'){ syncRemindersToServer(); }
+    } else {
+      go('screen-onboarding');
+    }
   }
 })();
 </script>
