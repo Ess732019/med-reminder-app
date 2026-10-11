@@ -1,0 +1,9 @@
+{
+  "name": "test-android-push",
+  "version": "1.0.0",
+  "private": true,
+  "main": "test-android-push.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
