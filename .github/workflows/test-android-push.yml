@@ -1,0 +1,33 @@
+name: Test Android push (manual)
+
+# بيتشغل يدويًا بس من تاب Actions - بتدخل رمز الجهاز كل مرة تجرب فيها
+on:
+  workflow_dispatch:
+    inputs:
+      device_token:
+        description: 'رمز الجهاز (FCM token) من شاشة التطبيق'
+        required: true
+        type: string
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: functions-android
+        run: npm install --omit=dev
+
+      - name: Send test push
+        working-directory: functions-android
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TEST_DEVICE_TOKEN: ${{ inputs.device_token }}
+        run: node test-android-push.js
